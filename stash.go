@@ -45,8 +45,15 @@ func NewStash(dst, asset string) (*Stash, error) {
 	}, nil
 }
 
-func (stash *Stash) Set(key string, value string) error {
+func (stash *Stash) All() []string {
+	keys := make([]string, 0, len(stash.keyValues))
+	for k, _ := range stash.keyValues {
+		keys = append(keys, k)
+	}
+	return keys
+}
 
+func (stash *Stash) Set(key string, value string) error {
 	stash.keyValues[key] = value
 
 	return stash.write()
