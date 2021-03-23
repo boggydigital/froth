@@ -51,10 +51,21 @@ func (stash *Stash) All() []string {
 	return keys
 }
 
-func (stash *Stash) Set(key string, value interface{}) error {
+func (stash *Stash) set(key string, value interface{}) error {
 	stash.keyValues[key] = value
-
 	return stash.write()
+}
+
+func (stash *Stash) SetString(key string, value string) error {
+	return stash.set(key, value)
+}
+
+func (stash *Stash) SetStringSlice(key string, values []string) error {
+	return stash.set(key, values)
+}
+
+func (stash *Stash) SetInt(key string, value int) error {
+	return stash.set(key, value)
 }
 
 func (stash *Stash) write() error {
@@ -71,17 +82,53 @@ func (stash *Stash) write() error {
 	return kvStash.Set(stash.asset, buf)
 }
 
-func (stash *Stash) SetMany(keyValues map[string]interface{}) error {
+func (stash *Stash) setMany(keyValues map[string]interface{}) error {
 	for k, v := range keyValues {
 		stash.keyValues[k] = v
 	}
 	return stash.write()
 }
 
-func (stash *Stash) Get(key string) (interface{}, bool) {
+func (stash *Stash) SetManyStrings(keyValues map[string]string) error {
+	for k, v := range keyValues {
+		stash.keyValues[k] = v
+	}
+	return stash.write()
+}
+
+func (stash *Stash) SetManyStringSlices(keyValues map[string][]string) error {
+	for k, v := range keyValues {
+		stash.keyValues[k] = v
+	}
+	return stash.write()
+}
+
+func (stash *Stash) SetManyInts(keyValues map[string]int) error {
+	for k, v := range keyValues {
+		stash.keyValues[k] = v
+	}
+	return stash.write()
+}
+
+func (stash *Stash) get(key string) (interface{}, bool) {
 	if stash == nil || stash.keyValues == nil {
 		return "", false
 	}
 	val, ok := stash.keyValues[key]
 	return val, ok
+}
+
+func (stash *Stash) GetString(key string) (string, bool) {
+	val, ok := stash.get(key)
+	return val.(string), ok
+}
+
+func (stash *Stash) GetStringSlice(key string) ([]string, bool) {
+	val, ok := stash.get(key)
+	return val.([]string), ok
+}
+
+func (stash *Stash) GetInt(key string) (int, bool) {
+	val, ok := stash.get(key)
+	return val.(int), ok
 }
