@@ -9,8 +9,7 @@ import (
 type Stash struct {
 	dst       string
 	asset     string
-	valueSet  *kvas.ValueSet
-	keyValues map[string]string
+	keyValues map[string]interface{}
 }
 
 func NewStash(dst, asset string) (*Stash, error) {
@@ -24,7 +23,7 @@ func NewStash(dst, asset string) (*Stash, error) {
 		return nil, err
 	}
 
-	var keyValues map[string]string
+	var keyValues map[string]interface{}
 
 	if stashRC != nil {
 		defer stashRC.Close()
@@ -34,26 +33,25 @@ func NewStash(dst, asset string) (*Stash, error) {
 	}
 
 	if keyValues == nil {
-		keyValues = make(map[string]string, 0)
+		keyValues = make(map[string]interface{}, 0)
 	}
 
 	return &Stash{
 		dst:       dst,
 		asset:     asset,
-		valueSet:  kvStash,
 		keyValues: keyValues,
 	}, nil
 }
 
 func (stash *Stash) All() []string {
 	keys := make([]string, 0, len(stash.keyValues))
-	for k, _ := range stash.keyValues {
+	for k := range stash.keyValues {
 		keys = append(keys, k)
 	}
 	return keys
 }
 
-func (stash *Stash) Set(key string, value string) error {
+func (stash *Stash) Set(key string, value interface{}) error {
 	stash.keyValues[key] = value
 
 	return stash.write()
@@ -73,14 +71,14 @@ func (stash *Stash) write() error {
 	return kvStash.Set(stash.asset, buf)
 }
 
-func (stash *Stash) SetMany(keyValues map[string]string) error {
+func (stash *Stash) SetMany(keyValues map[string]interface{}) error {
 	for k, v := range keyValues {
 		stash.keyValues[k] = v
 	}
 	return stash.write()
 }
 
-func (stash *Stash) Get(key string) (string, bool) {
+func (stash *Stash) Get(key string) (interface{}, bool) {
 	if stash == nil || stash.keyValues == nil {
 		return "", false
 	}
