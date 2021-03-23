@@ -51,6 +51,11 @@ func (stash *Stash) All() []string {
 	return keys
 }
 
+func (stash *Stash) Contains(id string) bool {
+	_, ok := stash.keyValues[id]
+	return ok
+}
+
 func (stash *Stash) set(key string, value interface{}) error {
 	stash.keyValues[key] = value
 	return stash.write()
