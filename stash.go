@@ -51,16 +51,23 @@ func (stash *Stash) All() []string {
 	return keys
 }
 
-func (stash *Stash) Contains(id string) bool {
-	_, ok := stash.keyValues[id]
+func (stash *Stash) Contains(key string) bool {
+	_, ok := stash.keyValues[key]
 	return ok
 }
 
-func (stash *Stash) Add(key string, value string) error {
+func (stash *Stash) ContainsValue(key string, value string) bool {
 	for _, val := range stash.keyValues[key] {
 		if val == value {
-			return nil
+			return true
 		}
+	}
+	return false
+}
+
+func (stash *Stash) Add(key string, value string) error {
+	if stash.ContainsValue(key, value) {
+		return nil
 	}
 	stash.keyValues[key] = append(stash.keyValues[key], value)
 	return stash.write()
@@ -80,19 +87,27 @@ func (stash *Stash) write() error {
 	return kvStash.Set(stash.asset, buf)
 }
 
-func (stash *Stash) SetMany(keyValues map[string]string) error {
-	for k, v := range keyValues {
-		for _, val := range stash.keyValues[k] {
-			if val == v {
+func (stash *Stash) AddMany(keyValues map[string][]string) error {
+	for key, values := range keyValues {
+		for _, val := range values {
+			if stash.ContainsValue(key, val) {
 				continue
 			}
+			stash.keyValues[key] = append(stash.keyValues[key], val)
 		}
-		stash.keyValues[k] = append(stash.keyValues[k], v)
 	}
 	return stash.write()
 }
 
-func (stash *Stash) Get(key string) ([]string, bool) {
+func (stash *Stash) Get(key string) (string, bool) {
+	values, ok := stash.GetAll(key)
+	if len(values) > 0 {
+		return values[0], ok
+	}
+	return "", false
+}
+
+func (stash *Stash) GetAll(key string) ([]string, bool) {
 	if stash == nil || stash.keyValues == nil {
 		return nil, false
 	}
