@@ -116,14 +116,21 @@ func (stash *Stash) GetAll(key string) ([]string, bool) {
 	return val, ok
 }
 
-func (stash *Stash) Search(term string, anyCase bool) []string {
-	if anyCase {
+func (stash *Stash) Search(term string, scope []string, ignoreCase bool) []string {
+	if scope == nil {
+		scope = stash.All()
+	}
+	if ignoreCase {
 		term = strings.ToLower(term)
 	}
 	matchingKeys := make([]string, 0)
-	for key, values := range stash.keyValues {
+	for _, key := range scope {
+		values, ok := stash.GetAll(key)
+		if !ok {
+			continue
+		}
 		for _, val := range values {
-			if anyCase {
+			if ignoreCase {
 				val = strings.ToLower(val)
 			}
 			if strings.Contains(val, term) {
