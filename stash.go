@@ -74,6 +74,26 @@ func (stash *Stash) Add(key string, value string) error {
 	return stash.write()
 }
 
+func (stash *Stash) Remove(key string, value string) error {
+	if !stash.ContainsValue(key, value) {
+		return nil
+	}
+	values := make([]string, 0, len(stash.keyValues[key]))
+	for _, val := range stash.keyValues[key] {
+		if val == value {
+			continue
+		}
+		values = append(values, val)
+	}
+
+	stash.keyValues[key] = values
+
+	if len(stash.keyValues[key]) == 0 {
+		delete(stash.keyValues, key)
+	}
+	return stash.write()
+}
+
 func (stash *Stash) write() error {
 	kvStash, err := kvas.NewGobLocal(stash.dst)
 	if err != nil {
@@ -88,17 +108,24 @@ func (stash *Stash) write() error {
 	return kvStash.Set(stash.asset, buf)
 }
 
-func (stash *Stash) AddMany(keyValues map[string][]string) error {
+func (stash *Stash) SetMany(keyValues map[string][]string) error {
 	for key, values := range keyValues {
-		for _, val := range values {
-			if stash.ContainsValue(key, val) {
-				continue
-			}
-			stash.keyValues[key] = append(stash.keyValues[key], val)
-		}
+		stash.keyValues[key] = values
 	}
 	return stash.write()
 }
+
+//func (stash *Stash) AddMany(keyValues map[string][]string) error {
+//	for key, values := range keyValues {
+//		for _, val := range values {
+//			if stash.ContainsValue(key, val) {
+//				continue
+//			}
+//			stash.keyValues[key] = append(stash.keyValues[key], val)
+//		}
+//	}
+//	return stash.write()
+//}
 
 func (stash *Stash) Get(key string) (string, bool) {
 	values, ok := stash.GetAll(key)
@@ -116,27 +143,35 @@ func (stash *Stash) GetAll(key string) ([]string, bool) {
 	return val, ok
 }
 
-func (stash *Stash) Search(term string, scope []string, ignoreCase bool) []string {
+func (stash *Stash) Search(terms []string, scope []string, ignoreCase bool) []string {
 	if scope == nil {
 		scope = stash.All()
 	}
-	if ignoreCase {
-		term = strings.ToLower(term)
-	}
-	matchingKeys := make([]string, 0)
-	for _, key := range scope {
-		values, ok := stash.GetAll(key)
-		if !ok {
-			continue
+
+	matches := make(map[string]bool, 0)
+	for _, term := range terms {
+		if ignoreCase {
+			term = strings.ToLower(term)
 		}
-		for _, val := range values {
-			if ignoreCase {
-				val = strings.ToLower(val)
+		for _, key := range scope {
+			values, ok := stash.GetAll(key)
+			if !ok {
+				continue
 			}
-			if strings.Contains(val, term) {
-				matchingKeys = append(matchingKeys, key)
+			for _, val := range values {
+				if ignoreCase {
+					val = strings.ToLower(val)
+				}
+				if strings.Contains(val, term) {
+					matches[key] = true
+				}
 			}
 		}
 	}
+	matchingKeys := make([]string, 0, len(matches))
+	for mk, _ := range matches {
+		matchingKeys = append(matchingKeys, mk)
+	}
+
 	return matchingKeys
 }
